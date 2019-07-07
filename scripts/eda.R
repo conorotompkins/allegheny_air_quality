@@ -30,7 +30,7 @@ df %>%
          bcstat, h2s, 
          no, no2, nox, noy, noydif,
          out_rh, out_t, ozone, ozone2,
-         contains("pm"),
+         pm10, pm10b, pm25, `pm25(2)`, pm25b, pm25t, 
          #pm10, pm10b, pm25, pm25b, pm25t, 
          so2#,
          #uvpm, rainfall, solarrad,
