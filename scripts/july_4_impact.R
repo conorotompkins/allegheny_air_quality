@@ -1,5 +1,6 @@
 library(tidyverse)
 library(lubridate)
+library(hrbrthemes)
 
 theme_set(theme_bw())
 
@@ -26,28 +27,33 @@ df_july4
 
 
 df_analysis <- df %>% 
-  filter(stat == "Avg",
-         site %in% c("Flag Plaza", "Glassport High Street", "Liberty 2", "Lincoln")) %>% 
+  #filter(stat == "Avg",
+  #       site %in% c("Flag Plaza", "Glassport High Street", "Liberty 2", "Lincoln")) %>% 
   select(datetime, year, yday, month, mday, stat, site,
-         bcstat, h2s,
+         #bcstat, h2s,
          no, no2, nox, noy, noydif,
-         out_rh, out_t, ozone, ozone2,
-         pm10, pm10b, pm25, pm25b, pm25t, so2) %>% 
-  select(datetime:site, bcstat:so2) %>% 
+         #out_rh, out_t, ozone, ozone2,
+         pm10, pm10b, pm25, `pm25(2)`, pm25b, pm25t) %>% 
+  select(datetime:site, no2:pm25t) %>% 
   tidyr::pivot_longer(-c(datetime, year, yday, month, mday, stat, site), names_to = "measure", values_to = "value") %>% 
   arrange(site, measure, datetime)
-  
-df_analysis
-
-df_analysis %>% 
-  ggplot(aes(datetime, value, color = site)) +
-  geom_line() +
-  facet_grid(measure~site) +
-  geom_vline(xintercept = as.integer(df_july4$july4), alpha = .3)
 
 df_analysis <- df_analysis %>% 
   left_join(df_july4) %>% 
   mutate(timeline = datetime - july4)
+  
+df_analysis
+
+df_analysis %>% 
+  filter(!is.na(value),
+         stat %in% c("Avg", "Max")) %>% 
+  ggplot(aes(yday, value, color = site)) +
+  geom_point(alpha = .1) +
+  facet_grid(stat~measure, scales = "free_y") +
+  labs(x = "Day of year",
+       y = "Value") +
+  scale_color_discrete("Site")
+  #geom_vline(xintercept = as.integer(df_july4$july4), alpha = .3)
 
 df_analysis %>% 
   #mutate(yday = yday(datetime)) %>% 
@@ -56,18 +62,43 @@ df_analysis %>%
   facet_wrap(~year)
 
 df_analysis %>% 
-  ggplot(aes(timeline, value, color = measure)) +
-  geom_point(alpha = .1) +
+  group_by(measure) %>% 
+  mutate(value = scale(value)) %>% 
+  filter(stat %in% c("Avg", "Max")) %>% 
+  ggplot(aes(yday, value, color = site)) +
+  #geom_point(alpha = .8, size = .3) +
   geom_smooth() +
   geom_vline(xintercept = 0) +
-  facet_grid(measure~site, scale = "free_y")
+  facet_grid(stat~measure, scale = "free_y", margins = FALSE) +
+  labs(x = "Day of year",
+       y = "Scaled value") +
+  scale_color_discrete("Site") +
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal")
 
-df %>% 
-  select(datetime, yday, site, stat, no2) %>% 
-  filter(!is.na(no2)) %>% 
-  filter(stat == "Avg") %>% 
-  ggplot(aes(yday, no2, color = site)) +
-  geom_point(alpha = .1) +
-  geom_smooth()
+df_analysis %>% 
+  group_by(measure) %>% 
+  mutate(value = scale(value)) %>% 
+  filter(stat %in% c("Avg", "Max")) %>% 
+  ggplot(aes(timeline, value, color = measure)) +
+  #geom_point(alpha = .3) +
+  geom_smooth() +
+  coord_cartesian(xlim = c(-30, 30))
+
+
+df_analysis %>% 
+  select(timeline, site, stat, measure, value) %>% 
+  filter(!is.na(value)) %>% 
+  filter(stat %in% c("Max", "Avg"),
+         measure == "pm25") %>% 
+  ggplot(aes(timeline, value, color = site)) +
+  geom_point(alpha = .4) +
+  geom_smooth() +
+  geom_vline(xintercept = 0) +
+  facet_grid(~stat) +
+  labs(x = "Days since July 4",
+       y = "Value") +
+  scale_color_discrete("Site") +
+  theme_ipsum()
   
 
